@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio & Assignment Submission</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0a0a0a; /* Dark mode background */
+            color: #ffffff;
+        }
+        h1, h2, h3, .title-font {
+            font-family: 'Oswald', sans-serif;
+        }
+        /* Giant background text effect */
+        .bg-text {
+            background: linear-gradient(180deg, rgba(255, 200, 0, 0.15) 0%, rgba(10, 10, 10, 0) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="antialiased overflow-x-hidden selection:bg-yellow-600 selection:text-white">
+
+    <!-- Hero Section -->
+    <section class="relative pt-20 pb-16 px-6 max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between min-h-[70vh]">
+        <!-- Background Text (PORTFOLIO) -->
+        <div class="absolute top-0 left-0 w-full text-center -z-10 overflow-hidden select-none pointer-events-none mt-10">
+            <h1 class="text-[100px] md:text-[170px] font-bold bg-text title-font tracking-tighter leading-none">GROUP 5</h1>
+        </div>
+
+        <div class="w-full md:w-1/2 z-10 space-y-6">
+            <p class="text-xl text-gray-400 italic">Hello, I am...</p>
+            <h1 class="text-8xl md:text-8xl font-bold title-font tracking-wide leading-tight">
+                GILANG EKA <br> <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">PRATAMA</span>
+            </h1>
+            <h2 class="text-yellow-600 text-xl md:text-2xl font-semibold tracking-widest uppercase">
+                Electrical Engineering Student
+            </h2>
+            <p class="text-gray-400 max-w-md text-sm md:text-base leading-relaxed">
+                Hello, I am a student using this site to submit my university assignments. Please scroll down to select a submission platform.
+            </p>
+        </div>
+        
+        <!-- Placeholder for Photo/Illustration -->
+        <div class="w-full md:w-1/2 z-10 mt-12 md:mt-0 flex justify-center md:justify-end">
+            <div class="relative w-72 h-96 md:w-80 md:h-[30rem] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl">
+                <img src="IMG_8816.JPG" alt="Profile" class="w-full h-full object-cover opacity-80 grayscale hover:grayscale-0 transition duration-500">
+                <div class="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] to-transparent"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Divider -->
+    <div class="w-full max-w-7xl mx-auto px-6">
+        <div class="h-px w-full bg-gray-800"></div>
+    </div>
+
+    <!-- Assignment Submission Section -->
+    <section class="py-24 px-6 max-w-6xl mx-auto">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold title-font tracking-wide mb-4">SELECT SUBMISSION PLATFORM</h2>
+            <p class="text-gray-400">Choose one of the platforms below according to the required assignment format.</p>
+        </div>
+
+        <!-- Grid Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <!-- Card 1: Google Drive -->
+            <div class="group bg-[#151515] border border-gray-800 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-500 hover:-translate-y-3 hover:border-yellow-600 hover:shadow-[0_0_40px_-10px_rgba(220,38,38,0.4)] cursor-pointer">
+                <!-- Dummy Google Drive Icon (SVG) -->
+                <div class="w-20 h-20 mb-6 bg-gray-900 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                    <img src="drive.png" alt="Google Drive" class="w-10 h-10">
+                </div>
+                <h3 class="text-2xl font-bold mb-3 title-font tracking-wide">Google Drive</h3>
+                <p class="text-gray-400 text-sm mb-8 flex-grow">Submit general assignment files (PDF, ZIP, Code) for long-term storage and archiving.</p>
+                <a href="#" class="w-full py-3 px-6 bg-gray-900 border border-gray-700 text-gray-300 font-semibold rounded-lg group-hover:bg-yellow-600 group-hover:border-yellow-600 group-hover:text-white transition-all duration-300">
+                    SELECT DRIVE
+                </a>
+            </div>
+
+            <!-- Card 2: Google Photo -->
+            <div class="group bg-[#151515] border border-gray-800 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-500 hover:-translate-y-3 hover:border-yellow-600 hover:shadow-[0_0_40px_-10px_rgba(220,38,38,0.4)] cursor-pointer">
+                <!-- Dummy Google Photos Icon (SVG) -->
+                <div class="w-20 h-20 mb-6 bg-gray-900 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                    <img src="photo.png" alt="Google Photo" class="w-10 h-10">
+                </div>
+                <h3 class="text-2xl font-bold mb-3 title-font tracking-wide">Google Photo</h3>
+                <p class="text-gray-400 text-sm mb-8 flex-grow">Submit image proofs, event documentation, or visual design assignments for quick review.</p>
+                <a href="#" class="w-full py-3 px-6 bg-gray-900 border border-gray-700 text-gray-300 font-semibold rounded-lg group-hover:bg-yellow-600 group-hover:border-yellow-600 group-hover:text-white transition-all duration-300">
+                    SELECT PHOTO
+                </a>
+            </div>
+
+            <!-- Card 3: Google Docs -->
+            <div class="group bg-[#151515] border border-gray-800 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-500 hover:-translate-y-3 hover:border-yellow-600 hover:shadow-[0_0_40px_-10px_rgba(220,38,38,0.4)] cursor-pointer">
+                <!-- Dummy Google Docs Icon (SVG) -->
+                <div class="w-20 h-20 mb-6 bg-gray-900 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                    <img src="docs.png" alt="Google Docs" class="w-7 h-10">
+                </div>
+                <h3 class="text-2xl font-bold mb-3 title-font tracking-wide">Google Docs</h3>
+                <p class="text-gray-400 text-sm mb-8 flex-grow">Submit text-based reports, essays, journals, and written documents for collaboration.</p>
+                <a href="#" class="w-full py-3 px-6 bg-gray-900 border border-gray-700 text-gray-300 font-semibold rounded-lg group-hover:bg-yellow-600 group-hover:border-yellow-600 group-hover:text-white transition-all duration-300">
+                    SELECT DOCS
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 py-8 text-center text-gray-500 text-sm">
+        <p>&copy; 2026 Portfolio Assignment. Built with Tailwind CSS.</p>
+    </footer>
+
+</body>
+</html>
