@@ -50,6 +50,31 @@
                 text-shadow: 0 0 24px rgba(202, 138, 4, 0.45);
             }
         }
+        @keyframes text-selection {
+            0%, 100% {
+                width: 0;
+            }
+            45%, 70% {
+                width: calc(100% + 0.1em);
+            }
+        }
+        .selection-effect {
+            position: relative;
+            display: inline-block;
+            isolation: isolate;
+            color: #ffffff;
+            -webkit-text-fill-color: #ffffff;
+        }
+        .selection-effect::after {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            left: -0.00em;
+            bottom: 0.01em;
+            height: 0.9em;
+            background: #ca8a04;
+            animation: text-selection 3.5s ease-in-out both;
+        }
         .hero-copy {
             animation: fade-up 0.8s ease-out both;
         }
@@ -114,13 +139,13 @@
         <div class="hero-copy w-full md:w-1/2 z-10 space-y-4">
             <p class="text-xl text-gray-400 italic">Hello, I am...</p>
             <h1 class="text-7xl md:text-7xl font-bold title-font tracking-wide leading-tight">
-                GILANG EKA <br> <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">PRATAMA</span>
+                GILANG EKA <br> <span class="selection-effect">PRATAMA</span>
             </h1>
             <p class="text-yellow-600 text-sm md:text-base font-semibold tracking-widest">
                 NIM: 25090520046
             </p>
             <h2 class="text-yellow-600 text-xl md:text-2xl font-semibold tracking-widest uppercase">
-                Electrical Engineering Student
+                Electrical Engineering Student - FV UNY
             </h2>
             <p class="text-gray-400 max-w-md text-sm md:text-base leading-relaxed">
                 Hello, I am a student using this site to submit my university assignments. Please scroll down to select a submission platform.
@@ -129,8 +154,8 @@
         
         <!-- Placeholder for Photo/Illustration -->
         <div class="w-full md:w-1/2 z-10 mt-12 md:mt-0 flex justify-center md:justify-end">
-            <div class="hero-photxo relative w-72 h-96 md:w-80 md:h-[30rem] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl">
-                <img src="assets/img/LANG.jpeg" alt="Profile" class="w-full h-full object-cover opacity-80 grayscale hover:grayscale-0 transition duration-500">
+            <div class="hero-photo relative w-72 h-96 md:w-80 md:h-[30rem] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl">
+                <img src="assets/img/gil.jpeg" alt="Profile" class="w-full h-full object-cover opacity-80 transition duration-500">
                 <div class="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] to-transparent"></div>
             </div>
         </div>
