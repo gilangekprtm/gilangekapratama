@@ -1,163 +1,241 @@
 (function () {
-    const DATABASE_NAME = 'gilang-assignment-tasks';
-    const DATABASE_VERSION = 1;
-    const STORE_NAME = 'data';
-    const TASKS_KEY = 'tasks-json';
+    const BUCKET_NAME = 'task-attachments';
+    const MAX_FILE_SIZE = 50 * 1024 * 1024;
+    let client;
 
-    const defaultTasks = [
-        {
-            id: 'task-1',
-            title: 'Task 1 - Curriculum Vitae',
-            description: 'Fresh Graduate Curriculum Vitae (CV) Submission\n\nThis document is a text-based submission for Task 1, featuring a professional English Curriculum Vitae (CV) tailored for a fresh graduate in Electrical Engineering (B.A.Sc.). It covers professional summary, educational background, work experience, organizational roles, certifications, and technical skill sets.',
-            attachment: {
-                name: 'CV GILANG EKA PRATAMA 2026.pdf',
-                type: 'application/pdf',
-                url: 'assets/pdf/CV%20GILANG%20EKA%20PRATAMA%202026.pdf'
-            }
+    function getClient() {
+        if (client) return client;
+        const config = window.SUPABASE_CONFIG;
+        if (!config || !config.url || !config.anonKey ||
+            config.url.includes('YOUR_PROJECT_ID') ||
+            config.anonKey.includes('YOUR_SUPABASE')) {
+            throw new Error('Supabase belum dikonfigurasi. Isi URL proyek dan publishable/anon key di assets/js/supabase-config.js.');
         }
-    ];
-
-    function openDatabase() {
-        return new Promise((resolve, reject) => {
-            if (!window.indexedDB) {
-                reject(new Error('Browser ini tidak mendukung penyimpanan lokal yang dibutuhkan.'));
-                return;
-            }
-
-            const request = window.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
-            request.onupgradeneeded = () => {
-                if (!request.result.objectStoreNames.contains(STORE_NAME)) {
-                    request.result.createObjectStore(STORE_NAME, { keyPath: 'key' });
-                }
-            };
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error || new Error('Database tugas tidak dapat dibuka.'));
-        });
+        if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+            throw new Error('Library Supabase gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.');
+        }
+        client = window.supabase.createClient(config.url, config.anonKey);
+        return client;
     }
 
-    function validateTasks(tasks) {
-        if (!Array.isArray(tasks)) {
-            throw new Error('Format JSON tidak valid: daftar tugas harus berupa array.');
+    function unwrap(result) {
+        if (result.error) {
+            throw new Error(result.error.message || 'Permintaan ke Supabase gagal.');
+        }
+        return result.data;
+    }
+
+    function mapTask(row) {
+        let attachment = null;
+        if (row.attachment_name) {
+            const url = row.attachment_path
+                ? getClient().storage.from(BUCKET_NAME).getPublicUrl(row.attachment_path).data.publicUrl
+                : row.attachment_url;
+            if (!url) {
+                throw new Error(`Tugas "${row.title}" memiliki lampiran tanpa URL yang valid.`);
+            }
+            attachment = {
+                name: row.attachment_name,
+                type: row.attachment_type || '',
+                url
+            };
         }
 
-        const ids = new Set();
-        return tasks.map((task, index) => {
-            if (!task || typeof task !== 'object' ||
-                typeof task.id !== 'string' || !task.id.trim() ||
-                typeof task.title !== 'string' || !task.title.trim() ||
-                typeof task.description !== 'string') {
-                throw new Error(`Data tugas nomor ${index + 1} tidak valid.`);
-            }
-            if (ids.has(task.id)) {
-                throw new Error(`ID tugas duplikat: ${task.id}`);
-            }
-            ids.add(task.id);
+        return {
+            id: row.id,
+            title: row.title,
+            description: row.description || '',
+            attachment
+        };
+    }
 
-            let attachment = null;
-            if (task.attachment != null) {
-                const item = task.attachment;
-                if (!item || typeof item !== 'object' || typeof item.name !== 'string' || !item.name.trim()) {
-                    throw new Error(`Lampiran tugas nomor ${index + 1} tidak valid.`);
-                }
+    function safeFileName(name) {
+        const baseName = name.split(/[\\/]/).pop() || 'attachment';
+        return baseName.replace(/[^\w.\-() ]/g, '_').slice(-120) || 'attachment';
+    }
 
-                if (typeof item.dataUrl === 'string' && /^data:[^,]*;base64,[A-Za-z0-9+/]*={0,2}$/.test(item.dataUrl)) {
-                    attachment = {
-                        name: item.name,
-                        type: typeof item.type === 'string' ? item.type : '',
-                        size: Number.isFinite(item.size) ? item.size : 0,
-                        dataUrl: item.dataUrl
-                    };
-                } else if (typeof item.url === 'string' &&
-                    (item.url.startsWith('assets/') || item.url.startsWith('https://')) &&
-                    !item.url.includes('..')) {
-                    attachment = {
-                        name: item.name,
-                        type: typeof item.type === 'string' ? item.type : '',
-                        size: Number.isFinite(item.size) ? item.size : 0,
-                        url: item.url
-                    };
-                } else {
-                    throw new Error(`Format lampiran tugas nomor ${index + 1} tidak didukung.`);
-                }
-            }
+    async function uploadAttachment(taskId, file) {
+        if (!file) return null;
+        if (file.size > MAX_FILE_SIZE) {
+            throw new Error('Ukuran file maksimal 50 MB.');
+        }
 
-            return {
-                id: task.id,
-                title: task.title.trim(),
-                description: task.description,
-                attachment
-            };
+        const path = `${taskId}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
+        const storage = getClient().storage.from(BUCKET_NAME);
+        const result = await storage.upload(path, file, {
+            cacheControl: '3600',
+            contentType: file.type || 'application/octet-stream',
+            upsert: false
         });
+        unwrap(result);
+        return {
+            attachment_path: path,
+            attachment_name: file.name,
+            attachment_type: file.type || 'application/octet-stream',
+            attachment_url: null
+        };
+    }
+
+    async function removeAttachment(path) {
+        if (!path) return;
+        unwrap(await getClient().storage.from(BUCKET_NAME).remove([path]));
     }
 
     async function getTasks() {
-        const database = await openDatabase();
+        const data = unwrap(await getClient()
+            .from('tasks')
+            .select('id,title,description,attachment_path,attachment_name,attachment_type,attachment_url,created_at')
+            .order('created_at', { ascending: true }));
+        return data.map(mapTask);
+    }
+
+    async function createTask(task) {
+        const id = crypto.randomUUID();
+        let uploaded;
         try {
-            const transaction = database.transaction(STORE_NAME, 'readonly');
-            const request = transaction.objectStore(STORE_NAME).get(TASKS_KEY);
-            const record = await new Promise((resolve, reject) => {
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error || new Error('Data tugas tidak dapat dibaca.'));
-            });
-
-            if (!record) {
-                const initialTasks = validateTasks(defaultTasks);
-                await saveTasks(initialTasks);
-                return initialTasks;
+            uploaded = await uploadAttachment(id, task.file);
+            const row = {
+                id,
+                title: task.title.trim(),
+                description: task.description.trim(),
+                ...(uploaded || {})
+            };
+            const data = unwrap(await getClient().from('tasks').insert(row)
+                .select('id,title,description,attachment_path,attachment_name,attachment_type,attachment_url,created_at')
+                .single());
+            return mapTask(data);
+        } catch (error) {
+            if (uploaded) {
+                try {
+                    await removeAttachment(uploaded.attachment_path);
+                } catch (cleanupError) {
+                    throw new Error(`${error.message} File yang sempat diunggah juga gagal dibersihkan: ${cleanupError.message}`);
+                }
             }
+            throw error;
+        }
+    }
 
-            let tasks;
+    async function importTask(task, attachmentUrl) {
+        if (!task || typeof task.title !== 'string' || typeof task.description !== 'string') {
+            throw new Error('Data tugas di dalam JSON tidak valid.');
+        }
+        if (attachmentUrl && !attachmentUrl.startsWith('https://') &&
+            (!attachmentUrl.startsWith('assets/') || attachmentUrl.includes('..'))) {
+            throw new Error('URL lampiran impor harus berupa URL HTTPS atau path assets/.');
+        }
+
+        const row = {
+            id: crypto.randomUUID(),
+            title: task.title.trim(),
+            description: task.description,
+            ...(attachmentUrl
+                ? {
+                    attachment_url: attachmentUrl,
+                    attachment_name: task.attachment.name,
+                    attachment_type: task.attachment.type || ''
+                }
+                : {})
+        };
+        return mapTask(unwrap(await getClient().from('tasks').insert(row)
+            .select('id,title,description,attachment_path,attachment_name,attachment_type,attachment_url,created_at')
+            .single()));
+    }
+
+    async function updateTask(id, task) {
+        const current = unwrap(await getClient().from('tasks')
+            .select('attachment_path,attachment_name,attachment_type,attachment_url')
+            .eq('id', id)
+            .single());
+        const uploaded = await uploadAttachment(id, task.file);
+        const removeExisting = task.removeAttachment && !uploaded;
+        const attachmentFields = uploaded
+            ? uploaded
+            : removeExisting
+                ? { attachment_path: null, attachment_name: null, attachment_type: null, attachment_url: null }
+                : {};
+        let data;
+        try {
+            data = unwrap(await getClient().from('tasks').update({
+                title: task.title.trim(),
+                description: task.description.trim(),
+                ...attachmentFields
+            }).eq('id', id)
+                .select('id,title,description,attachment_path,attachment_name,attachment_type,attachment_url,created_at')
+                .single());
+        } catch (error) {
+            if (uploaded) {
+                try {
+                    await removeAttachment(uploaded.attachment_path);
+                } catch (cleanupError) {
+                    throw new Error(`${error.message} File pengganti yang sempat diunggah juga gagal dibersihkan: ${cleanupError.message}`);
+                }
+            }
+            throw error;
+        }
+
+        const oldPath = current.attachment_path;
+        if (oldPath && (uploaded || removeExisting)) {
             try {
-                tasks = JSON.parse(record.value);
+                await removeAttachment(oldPath);
             } catch (error) {
-                throw new Error(`Data JSON tugas rusak dan tidak dapat dibaca: ${error.message}`);
+                throw new Error(`Perubahan tugas tersimpan, tetapi lampiran lama gagal dihapus: ${error.message}`);
             }
-            return validateTasks(tasks);
-        } finally {
-            database.close();
+        }
+        return mapTask(data);
+    }
+
+    async function deleteTask(id) {
+        const current = unwrap(await getClient().from('tasks')
+            .select('attachment_path')
+            .eq('id', id)
+            .single());
+        unwrap(await getClient().from('tasks').delete().eq('id', id));
+        if (current.attachment_path) {
+            try {
+                await removeAttachment(current.attachment_path);
+            } catch (error) {
+                throw new Error(`Tugas berhasil dihapus, tetapi file lampiran gagal dihapus: ${error.message}`);
+            }
         }
     }
 
-    async function saveTasks(tasks) {
-        const validatedTasks = validateTasks(tasks);
-        const database = await openDatabase();
-        try {
-            await new Promise((resolve, reject) => {
-                const transaction = database.transaction(STORE_NAME, 'readwrite');
-                transaction.objectStore(STORE_NAME).put({
-                    key: TASKS_KEY,
-                    value: JSON.stringify(validatedTasks)
-                });
-                transaction.oncomplete = resolve;
-                transaction.onerror = () => reject(transaction.error || new Error('Data tugas tidak dapat disimpan.'));
-                transaction.onabort = () => reject(transaction.error || new Error('Penyimpanan data tugas dibatalkan.'));
-            });
-        } finally {
-            database.close();
+    async function signIn(email, password) {
+        return unwrap(await getClient().auth.signInWithPassword({ email, password }));
+    }
+
+    async function signOut() {
+        unwrap(await getClient().auth.signOut());
+    }
+
+    async function getCurrentAdmin() {
+        const auth = getClient().auth;
+        const sessionResult = await auth.getSession();
+        const session = unwrap(sessionResult)?.session;
+        if (!session) return null;
+
+        const result = await getClient().from('task_admins')
+            .select('user_id')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+        if (result.error) {
+            throw new Error(`Tidak dapat memverifikasi akses admin: ${result.error.message}`);
         }
-    }
-
-    function createId() {
-        return window.crypto && typeof window.crypto.randomUUID === 'function'
-            ? window.crypto.randomUUID()
-            : `task-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    }
-
-    function fileToDataUrl(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = () => reject(reader.error || new Error('File lampiran tidak dapat dibaca.'));
-            reader.readAsDataURL(file);
-        });
+        if (!result.data) {
+            await signOut();
+            return null;
+        }
+        return session.user;
     }
 
     window.TaskStore = Object.freeze({
-        createId,
-        defaultTasks: validateTasks(defaultTasks),
-        fileToDataUrl,
+        createTask,
+        deleteTask,
+        getCurrentAdmin,
         getTasks,
-        saveTasks,
-        validateTasks
+        importTask,
+        signIn,
+        signOut,
+        updateTask
     });
 })();

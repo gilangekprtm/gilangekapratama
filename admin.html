@@ -18,12 +18,33 @@
             <a href="index.html" class="rounded-lg border border-gray-700 px-5 py-3 text-gray-300 transition hover:border-yellow-600 hover:bg-yellow-600 hover:text-white">Kembali ke website</a>
         </header>
 
+        <section id="login-panel" class="mb-10 rounded-2xl border border-gray-800 bg-[#111111] p-6 sm:p-8">
+            <h2 class="mb-2 text-2xl font-bold title-font">Login admin</h2>
+            <p class="mb-6 text-sm text-gray-400">Masuk dengan akun admin Supabase yang telah disiapkan.</p>
+            <form id="login-form" class="max-w-xl space-y-5">
+                <div>
+                    <label for="admin-email" class="mb-2 block text-sm font-semibold text-gray-200">Email</label>
+                    <input id="admin-email" name="email" type="email" required autocomplete="username" class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none focus:border-yellow-600">
+                </div>
+                <div>
+                    <label for="admin-password" class="mb-2 block text-sm font-semibold text-gray-200">Password</label>
+                    <input id="admin-password" name="password" type="password" required autocomplete="current-password" class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none focus:border-yellow-600">
+                </div>
+                <button type="submit" class="rounded-lg bg-yellow-700 px-5 py-3 font-semibold text-white transition hover:bg-yellow-600">Masuk</button>
+            </form>
+        </section>
+        <p id="status-message" role="status" aria-live="polite" class="mb-6 text-sm text-gray-300"></p>
+
         <div class="mb-8 rounded-xl border border-yellow-900 bg-yellow-950/30 p-5 text-sm leading-relaxed text-yellow-100">
-            Data dan file disimpan di browser/perangkat ini, bukan di GitHub Pages. Perubahan tidak otomatis tampil untuk pengunjung lain. Untuk memindahkan daftar tugas, ekspor JSON lalu impor di browser lain; agar perubahan dibagikan otomatis ke semua pengunjung, situs memerlukan backend. Jangan gunakan panel ini sebagai penyimpanan privat.
+            Setelah Supabase dikonfigurasi, perubahan akan tampil bagi semua pengunjung dan lampiran tersimpan di Supabase Storage. Ikuti <a href="SUPABASE_SETUP.md" class="underline">petunjuk setup</a> sebelum memakai panel.
         </div>
 
+        <div id="admin-panel" hidden>
         <section class="mb-10 rounded-2xl border border-gray-800 bg-[#111111] p-6 sm:p-8">
-            <h2 id="form-heading" class="mb-6 text-2xl font-bold title-font">Tambah tugas</h2>
+            <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <h2 id="form-heading" class="text-2xl font-bold title-font">Tambah tugas</h2>
+                <button id="sign-out" type="button" class="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-300 transition hover:border-gray-500">Keluar</button>
+            </div>
             <form id="task-form" class="space-y-5">
                 <div>
                     <label for="task-title" class="mb-2 block text-sm font-semibold text-gray-200">Nama tugas</label>
@@ -47,7 +68,6 @@
                     <button id="cancel-edit" type="button" hidden class="rounded-lg border border-gray-700 px-5 py-3 font-semibold text-gray-300 transition hover:border-gray-500">Batal edit</button>
                 </div>
             </form>
-            <p id="status-message" role="status" aria-live="polite" class="mt-4 text-sm text-gray-300"></p>
         </section>
 
         <section class="mb-10">
@@ -62,14 +82,17 @@
 
         <section class="rounded-2xl border border-gray-800 bg-[#111111] p-6 sm:p-8">
             <h2 class="mb-2 text-2xl font-bold title-font">Cadangan JSON</h2>
-            <p class="mb-5 text-sm leading-relaxed text-gray-400">Ekspor menyertakan daftar tugas dan lampiran yang diunggah. File lampiran dikodekan ke dalam JSON sehingga ukuran cadangan bisa besar.</p>
+            <p class="mb-5 text-sm leading-relaxed text-gray-400">Ekspor mencadangkan data daftar tugas. File lampiran tetap tersimpan di Supabase Storage dan tidak disertakan dalam JSON.</p>
             <div class="flex flex-wrap gap-3">
                 <button id="export-json" type="button" class="rounded-lg border border-gray-700 px-5 py-3 font-semibold text-gray-200 transition hover:border-yellow-600 hover:bg-yellow-600">Ekspor JSON</button>
                 <label for="import-json" class="cursor-pointer rounded-lg border border-gray-700 px-5 py-3 font-semibold text-gray-200 transition hover:border-yellow-600 hover:bg-yellow-600">Impor JSON</label>
                 <input id="import-json" type="file" accept=".json,application/json" hidden>
             </div>
         </section>
+        </div>
     </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase-config.js"></script>
     <script src="assets/js/task-store.js"></script>
     <script src="assets/js/admin.js"></script>
 </body>

@@ -4,23 +4,12 @@
 
     try {
         const tasks = await window.TaskStore.getTasks();
-        const cards = await Promise.all(tasks.map(async (task) => {
+        const cards = tasks.map((task) => {
             const card = document.createElement(task.attachment ? 'a' : 'article');
             card.className = 'reveal-card group bg-[#151515] border border-gray-800 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-500 hover:-translate-y-3 hover:border-yellow-600 hover:shadow-[0_0_40px_-10px_rgba(220,38,38,0.4)]';
 
             if (task.attachment) {
-                if (task.attachment.dataUrl) {
-                    const response = await fetch(task.attachment.dataUrl);
-                    if (!response.ok) {
-                        throw new Error(`Lampiran "${task.attachment.name}" tidak dapat dibuka.`);
-                    }
-                    card.href = URL.createObjectURL(await response.blob());
-                    if (task.attachment.type !== 'application/pdf' && !task.attachment.name.toLowerCase().endsWith('.pdf')) {
-                        card.download = task.attachment.name;
-                    }
-                } else {
-                    card.href = task.attachment.url;
-                }
+                card.href = task.attachment.url;
                 card.target = '_blank';
                 card.rel = 'noopener noreferrer';
                 card.classList.add('cursor-pointer', 'focus-visible:outline', 'focus-visible:outline-2', 'focus-visible:outline-yellow-600');
@@ -51,7 +40,7 @@
 
             card.append(icon, heading, description, action);
             return card;
-        }));
+        });
 
         grid.replaceChildren(...cards);
     } catch (error) {

@@ -1,14 +1,21 @@
 (function () {
-    const form = document.getElementById('task-form');
+    const loginPanel = document.getElementById('login-panel');
+    const adminPanel = document.getElementById('admin-panel');
+    const loginForm = document.getElementById('login-form');
+    const taskForm = document.getElementById('task-form');
     const taskList = document.getElementById('task-list');
     const status = document.getElementById('status-message');
-    const importInput = document.getElementById('import-json');
     let tasks = [];
     let editingId = null;
 
     function showStatus(message, isError) {
         status.textContent = message;
         status.className = isError ? 'mt-4 text-sm text-red-400' : 'mt-4 text-sm text-green-400';
+    }
+
+    function setAdminVisible(isAdmin) {
+        loginPanel.hidden = isAdmin;
+        adminPanel.hidden = !isAdmin;
     }
 
     function renderTasks() {
@@ -58,7 +65,7 @@
     }
 
     function resetForm() {
-        form.reset();
+        taskForm.reset();
         editingId = null;
         document.getElementById('form-heading').textContent = 'Tambah tugas';
         document.getElementById('save-task').textContent = 'Tambah tugas';
@@ -69,10 +76,10 @@
 
     function beginEditing(task) {
         editingId = task.id;
-        form.elements.title.value = task.title;
-        form.elements.description.value = task.description;
-        form.elements.file.value = '';
-        form.elements.removeAttachment.checked = false;
+        taskForm.elements.title.value = task.title;
+        taskForm.elements.description.value = task.description;
+        taskForm.elements.file.value = '';
+        taskForm.elements.removeAttachment.checked = false;
         document.getElementById('form-heading').textContent = 'Edit tugas';
         document.getElementById('save-task').textContent = 'Simpan perubahan';
         document.getElementById('cancel-edit').hidden = false;
@@ -80,21 +87,7 @@
         document.getElementById('current-attachment').textContent = task.attachment
             ? `Lampiran saat ini: ${task.attachment.name}`
             : 'Belum ada lampiran';
-        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    async function deleteTask(task) {
-        if (!window.confirm(`Hapus tugas "${task.title}"?`)) return;
-        try {
-            tasks = tasks.filter((item) => item.id !== task.id);
-            await window.TaskStore.saveTasks(tasks);
-            if (editingId === task.id) resetForm();
-            renderTasks();
-            showStatus('Tugas berhasil dihapus.', false);
-        } catch (error) {
-            showStatus(`Tugas gagal dihapus: ${error.message}`, true);
-            await refreshTasks();
-        }
+        taskForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     async function refreshTasks() {
@@ -102,55 +95,114 @@
         renderTasks();
     }
 
-    form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const formData = new FormData(form);
-        const title = String(formData.get('title')).trim();
-        const description = String(formData.get('description')).trim();
-        const existing = tasks.find((task) => task.id === editingId);
-        const selectedFile = form.elements.file.files[0];
-
+    async function deleteTask(task) {
+        if (!window.confirm(`Hapus tugas "${task.title}"?`)) return;
         try {
-            let attachment = existing ? existing.attachment : null;
-            if (selectedFile) {
-                attachment = {
-                    name: selectedFile.name,
-                    type: selectedFile.type,
-                    size: selectedFile.size,
-                    dataUrl: await window.TaskStore.fileToDataUrl(selectedFile)
-                };
-            } else if (existing && form.elements.removeAttachment.checked) {
-                attachment = null;
+            await window.TaskStore.deleteTask(task.id);
+        } catch (error) {
+            try {
+                await refreshTasks();
+            } catch (refreshError) {
+                showStatus(`Penghapusan gagal atau belum lengkap: ${error.message}. Daftar juga gagal diperbarui: ${refreshError.message}`, true);
+                return;
             }
+            showStatus(`Penghapusan gagal atau belum lengkap: ${error.message}`, true);
+            return;
+        }
 
-            const task = {
-                id: existing ? existing.id : window.TaskStore.createId(),
-                title,
-                description,
-                attachment
-            };
-            const updatedTasks = existing
-                ? tasks.map((item) => item.id === existing.id ? task : item)
-                : [...tasks, task];
+        if (editingId === task.id) resetForm();
+        try {
+            await refreshTasks();
+            showStatus('Tugas berhasil dihapus.', false);
+        } catch (error) {
+            showStatus(`Tugas terhapus, tetapi daftar tugas gagal diperbarui: ${error.message}`, true);
+        }
+    }
 
-            await window.TaskStore.saveTasks(updatedTasks);
-            tasks = updatedTasks;
-            renderTasks();
+    async function enableAdmin() {
+        setAdminVisible(true);
+        try {
+            await refreshTasks();
+            showStatus('Perubahan tugas akan langsung terlihat oleh semua pengunjung.', false);
+        } catch (error) {
+            showStatus(`Daftar tugas gagal dimuat: ${error.message}`, true);
+        }
+    }
+
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const submitButton = loginForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        try {
+            await window.TaskStore.signIn(
+                loginForm.elements.email.value.trim(),
+                loginForm.elements.password.value
+            );
+            const user = await window.TaskStore.getCurrentAdmin();
+            if (!user) {
+                throw new Error('Akun ini belum diberi akses admin. Tambahkan ID akun ke tabel task_admins di Supabase.');
+            }
+            loginForm.reset();
+            await enableAdmin();
+        } catch (error) {
+            showStatus(`Login gagal: ${error.message}`, true);
+        } finally {
+            submitButton.disabled = false;
+        }
+    });
+
+    document.getElementById('sign-out').addEventListener('click', async () => {
+        try {
+            await window.TaskStore.signOut();
+            setAdminVisible(false);
+            showStatus('Anda telah keluar.', false);
+        } catch (error) {
+            showStatus(`Tidak dapat keluar: ${error.message}`, true);
+        }
+    });
+
+    taskForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const title = taskForm.elements.title.value.trim();
+        const description = taskForm.elements.description.value.trim();
+        const file = taskForm.elements.file.files[0] || null;
+        const isEditing = Boolean(editingId);
+        const submitButton = document.getElementById('save-task');
+        submitButton.disabled = true;
+        try {
+            if (editingId) {
+                await window.TaskStore.updateTask(editingId, {
+                    title,
+                    description,
+                    file,
+                    removeAttachment: taskForm.elements.removeAttachment.checked
+                });
+            } else {
+                await window.TaskStore.createTask({ title, description, file });
+            }
+            const resultMessage = isEditing
+                ? 'Perubahan tugas berhasil disimpan.'
+                : 'Tugas berhasil ditambahkan dan kini terlihat oleh semua pengunjung.';
             resetForm();
-            showStatus(existing ? 'Perubahan tugas berhasil disimpan.' : 'Tugas berhasil ditambahkan.', false);
+            showStatus(resultMessage, false);
+            try {
+                await refreshTasks();
+            } catch (error) {
+                showStatus(`Perubahan tersimpan, tetapi daftar tugas gagal diperbarui: ${error.message}`, true);
+            }
         } catch (error) {
             showStatus(`Tugas gagal disimpan: ${error.message}`, true);
+        } finally {
+            submitButton.disabled = false;
         }
     });
 
     document.getElementById('cancel-edit').addEventListener('click', resetForm);
 
     document.getElementById('export-json').addEventListener('click', () => {
-        const data = {
-            format: 'task-panel-v1',
-            tasks
-        };
-        const file = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const file = new Blob([JSON.stringify({ format: 'task-panel-v1', tasks }, null, 2)], {
+            type: 'application/json'
+        });
         const url = URL.createObjectURL(file);
         const link = document.createElement('a');
         link.href = url;
@@ -159,35 +211,47 @@
         link.click();
         link.remove();
         window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-        showStatus('Cadangan JSON berhasil diunduh.', false);
+        showStatus('Daftar tugas berhasil diekspor. Lampiran tetap tersimpan di Supabase Storage.', false);
     });
 
-    importInput.addEventListener('change', async () => {
-        const file = importInput.files[0];
+    document.getElementById('import-json').addEventListener('change', async (event) => {
+        const input = event.currentTarget;
+        const file = input.files[0];
         if (!file) return;
 
         try {
             const backup = JSON.parse(await file.text());
-            if (!backup || backup.format !== 'task-panel-v1') {
-                throw new Error('Format cadangan tidak dikenal.');
+            if (!backup || backup.format !== 'task-panel-v1' || !Array.isArray(backup.tasks)) {
+                throw new Error('Format cadangan JSON tidak dikenal.');
             }
-            const importedTasks = window.TaskStore.validateTasks(backup.tasks);
-            if (!window.confirm(`Ganti seluruh daftar tugas dengan ${importedTasks.length} tugas dari file JSON?`)) {
-                return;
+            if (backup.tasks.some((task) => task.attachment?.dataUrl)) {
+                throw new Error('Cadangan lama berisi lampiran lokal. Unggah ulang lampiran melalui formulir tugas.');
             }
-            await window.TaskStore.saveTasks(importedTasks);
-            tasks = importedTasks;
+            if (!window.confirm(`Impor ${backup.tasks.length} tugas? Tugas yang sudah ada tidak dihapus.`)) return;
+
+            for (const task of backup.tasks) {
+                const fileUrl = task.attachment?.url || null;
+                if (fileUrl && !fileUrl.startsWith('https://') && !fileUrl.startsWith('assets/')) {
+                    throw new Error(`URL lampiran tugas "${task.title}" tidak valid.`);
+                }
+                const result = await window.TaskStore.importTask(task, fileUrl);
+                tasks.push(result);
+            }
             renderTasks();
-            resetForm();
-            showStatus('Daftar tugas berhasil diimpor dari JSON.', false);
+            showStatus('Tugas berhasil diimpor. Perubahan terlihat oleh semua pengunjung.', false);
         } catch (error) {
             showStatus(`JSON gagal diimpor: ${error.message}`, true);
+            await refreshTasks();
         } finally {
-            importInput.value = '';
+            input.value = '';
         }
     });
 
-    refreshTasks().catch((error) => {
-        showStatus(`Daftar tugas gagal dimuat: ${error.message}`, true);
-    });
+    window.TaskStore.getCurrentAdmin()
+        .then((user) => {
+            if (user) return enableAdmin();
+        })
+        .catch((error) => {
+            showStatus(`Tidak dapat memeriksa sesi admin: ${error.message}`, true);
+        });
 })();
