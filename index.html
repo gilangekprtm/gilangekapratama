@@ -56,7 +56,7 @@
         </div>
 
         <!-- Grid Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div id="task-grid" class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <!-- Card 3: Google Docs -->
             <a id="task-1-button" href="assets/pdf/CV%20GILANG%20EKA%20PRATAMA%202026.pdf" target="_blank" rel="noopener noreferrer" class="reveal-card group bg-[#151515] border border-gray-800 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-500 hover:-translate-y-3 hover:border-yellow-600 hover:shadow-[0_0_40px_-10px_rgba(220,38,38,0.4)] cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-600">
                 <!-- Dummy Google Docs Icon (SVG) -->
@@ -71,29 +71,6 @@ This document is a text-based submission for Task 1, featuring a professional En
                     SELECT TASK
                 </span>
             </a>
-            <div class="reveal-card group bg-[#151515] border border-gray-800 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-500 hover:-translate-y-3 hover:border-yellow-600 hover:shadow-[0_0_40px_-10px_rgba(220,38,38,0.4)] cursor-pointer">
-                <!-- Dummy Google Docs Icon (SVG) -->
-                <div class="w-20 h-20 mb-6 bg-gray-900 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
-                    <img src="assets/img/docs.png" alt="Google Docs" class="w-7 h-10">
-                </div>
-                <h3 class="text-2xl font-bold mb-3 title-font tracking-wide">Task 2</h3>
-                <p class="text-gray-400 text-sm mb-8 flex-grow">Submit text-based reports, essays, journals, and written documents for collaboration.</p>
-                <a href="#" class="w-full py-3 px-6 bg-gray-900 border border-gray-700 text-gray-300 font-semibold rounded-lg group-hover:bg-yellow-600 group-hover:border-yellow-600 group-hover:text-white transition-all duration-300">
-                    SELECT TASK
-                </a>
-            </div>
-            <div class="reveal-card group bg-[#151515] border border-gray-800 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-500 hover:-translate-y-3 hover:border-yellow-600 hover:shadow-[0_0_40px_-10px_rgba(220,38,38,0.4)] cursor-pointer">
-                <!-- Dummy Google Docs Icon (SVG) -->
-                <div class="w-20 h-20 mb-6 bg-gray-900 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
-                    <img src="assets/img/docs.png" alt="Google Docs" class="w-7 h-10">
-                </div>
-                <h3 class="text-2xl font-bold mb-3 title-font tracking-wide">Task 3</h3>
-                <p class="text-gray-400 text-sm mb-8 flex-grow">Submit text-based reports, essays, journals, and written documents for collaboration.</p>
-                <a href="#" class="w-full py-3 px-6 bg-gray-900 border border-gray-700 text-gray-300 font-semibold rounded-lg group-hover:bg-yellow-600 group-hover:border-yellow-600 group-hover:text-white transition-all duration-300">
-                    SELECT TASK
-                </a>
-            </div>
-
         </div>
     </section>
     <!-- Education History Section -->
@@ -136,6 +113,7 @@ This document is a text-based submission for Task 1, featuring a professional En
             <a href="https://www.linkedin.com/in/gilangekprtm/" target="_blank" rel="noopener noreferrer" class="px-5 py-3 border border-gray-700 rounded-lg text-gray-300 hover:text-white hover:border-yellow-600 hover:bg-yellow-600 transition-all duration-300">LinkedIn</a>
             <a href="https://www.instagram.com/gilangekprtm" target="_blank" rel="noopener noreferrer" class="px-5 py-3 border border-gray-700 rounded-lg text-gray-300 hover:text-white hover:border-yellow-600 hover:bg-yellow-600 transition-all duration-300">Instagram</a>
             <a href="mailto:gilangeka.2025@student.uny.ac.id" target="_blank" rel="noopener noreferrer" class="px-5 py-3 border border-gray-700 rounded-lg text-gray-300 hover:text-white hover:border-yellow-600 hover:bg-yellow-600 transition-all duration-300">Email</a>
+            <a href="admin.html" class="px-5 py-3 border border-gray-700 rounded-lg text-gray-300 hover:text-white hover:border-yellow-600 hover:bg-yellow-600 transition-all duration-300">Manage Tasks</a>
         </div>
         <p class="text-gray-500 text-sm">&copy; 2026 Portfolio Assignment. Built with Tailwind CSS.</p>
     </footer>
@@ -161,24 +139,27 @@ This document is a text-based submission for Task 1, featuring a professional En
             });
         }
 
-        document.querySelectorAll('a').forEach((button) => {
-            button.addEventListener('click', (event) => {
-                const ripple = document.createElement('span');
-                const diameter = Math.max(button.clientWidth, button.clientHeight);
-                const bounds = button.getBoundingClientRect();
+        document.addEventListener('click', (event) => {
+            const button = event.target.closest('a');
+            if (!button) return;
 
-                ripple.className = 'ripple';
-                ripple.style.width = `${diameter}px`;
-                ripple.style.height = `${diameter}px`;
-                ripple.style.left = `${event.clientX - bounds.left - diameter / 2}px`;
-                ripple.style.top = `${event.clientY - bounds.top - diameter / 2}px`;
-                button.style.position = 'relative';
-                button.style.overflow = 'hidden';
-                button.appendChild(ripple);
+            const ripple = document.createElement('span');
+            const diameter = Math.max(button.clientWidth, button.clientHeight);
+            const bounds = button.getBoundingClientRect();
 
-                setTimeout(() => ripple.remove(), 600);
-            });
+            ripple.className = 'ripple';
+            ripple.style.width = `${diameter}px`;
+            ripple.style.height = `${diameter}px`;
+            ripple.style.left = `${event.clientX - bounds.left - diameter / 2}px`;
+            ripple.style.top = `${event.clientY - bounds.top - diameter / 2}px`;
+            button.style.position = 'relative';
+            button.style.overflow = 'hidden';
+            button.appendChild(ripple);
+
+            setTimeout(() => ripple.remove(), 600);
         });
     </script>
+    <script src="assets/js/task-store.js"></script>
+    <script src="assets/js/task-cards.js"></script>
 </body>
 </html>
